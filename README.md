@@ -12,7 +12,7 @@ This is the official implementation of our paper "se(3)-TrackNet: Data-driven 6D
 
 # Bibtex
 ```bibtex
-	@conference {wense3tracknet,
+@conference {wense3tracknet,
 	title = {se(3)-TrackNet: Data-driven 6D Pose Tracking by Calibrating Image Residuals in Synthetic Domains},
 	booktitle = {IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)},
 	year = {2020},
