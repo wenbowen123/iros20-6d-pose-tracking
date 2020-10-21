@@ -11,8 +11,8 @@ This is the official implementation of our paper "se(3)-TrackNet: Data-driven 6D
 
 
 # Bibtex
-```latex
-@conference {wense3tracknet,
+```bibtex
+	@conference {wense3tracknet,
 	title = {se(3)-TrackNet: Data-driven 6D Pose Tracking by Calibrating Image Residuals in Synthetic Domains},
 	booktitle = {IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)},
 	year = {2020},
@@ -94,7 +94,7 @@ More details are in the paper and supplementary video.
 
 
 
-# Prediction on YCB and YCBInEOAT
+# Prediction on YCB_Video and YCBInEOAT
 Please refer to `predict.py` and `predict.sh`
 
 # Benchmarking
