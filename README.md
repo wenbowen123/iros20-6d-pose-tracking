@@ -75,6 +75,10 @@ Current benchmark:
 
 More details are in the paper and supplementary video.
 
+# Dependency
+Create your anaconda environment by `conda env create -f environment.yml`
+
+Then `source activate bowen`
 
 
 # Data Download
