@@ -1,3 +1,40 @@
+#
+# Authors: Bowen Wen
+# Contact: wenbowenxjtu@gmail.com
+# Created in 2020
+#
+# Copyright (c) Rutgers University, 2020 All rights reserved.
+#
+# Wen, B., C. Mitash, B. Ren, and K. E. Bekris. "se (3)-TrackNet:
+# Data-driven 6D Pose Tracking by Calibrating Image Residuals in
+# Synthetic Domains." In IEEE/RSJ International Conference on Intelligent
+# Robots and Systems (IROS). 2020.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#     * Redistributions of source code must retain the above copyright
+#       notice, this list of conditions and the following disclaimer.
+#     * Redistributions in binary form must reproduce the above copyright
+#       notice, this list of conditions and the following disclaimer in the
+#       documentation and/or other materials provided with the distribution.
+#     * Neither the name of the PRACSYS, Bowen Wen, Rutgers University,
+#       nor the names of its contributors may be used to
+#       endorse or promote products derived from this software without
+#       specific prior written permission.
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS 'AS IS' AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY
+# DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+
+
+
 import open3d as o3d
 import sys,shutil,pickle
 import os
@@ -42,7 +79,7 @@ class ProducerPurturb:
     print('self.cam_K:\n',self.cam_K)
     obj_path = self.dataset_info['models'][0]['obj_path']
     print('obj_path',obj_path)
-    self.renderer = ModelRendererOffscreen([obj_path],self.cam_K,dataset_info['camera']['height'],dataset_info['camera']['width'])
+    self.renderer = Renderer([obj_path],self.cam_K,dataset_info['camera']['height'],dataset_info['camera']['width'])
     self.glcam_in_cvcam = np.array([[1,0,0,0],
                                     [0,-1,0,0],
                                     [0,0,-1,0],
@@ -77,11 +114,6 @@ class ProducerPurturb:
       #   print('>>>>>>>>>>>>>>>> processing ',self.count)
       B_in_A = random_gaussian_magnitude(max_trans, max_rot)
       A_in_cam = B_in_cam.dot(np.linalg.inv(B_in_A))
-      bb_ortho = compute_2Dboundingbox(A_in_cam, self.cam_K, self.object_width, scale=(1000, -1000, 1000))
-      left = np.min(bb_ortho[:, 1])
-      right = np.max(bb_ortho[:, 1])
-      top = np.min(bb_ortho[:, 0])
-      bottom = np.max(bb_ortho[:, 0])
 
       projected = self.cam_K.dot(A_in_cam[:3,3].reshape(3,1)).reshape(-1)
       u = projected[0]/projected[2]
@@ -89,21 +121,16 @@ class ProducerPurturb:
       if u<0 or u>=W or v<0 or v>=H:
         continue
 
-      bb = compute_2Dboundingbox(A_in_cam, self.cam_K, self.object_width, scale=(1000, 1000, 1000))
-      if ('renderer' not in self.dataset_info) or (self.dataset_info['renderer']=='vispy'):
-        self.renderer.setup_camera(self.cam_K, left, right, bottom, top)
-        A_in_glcam = np.linalg.inv(self.glcam_in_cvcam).dot(A_in_cam)
-        rgbA, depthA = self.renderer.render_image(A_in_glcam, fbo_index=1)
-      else:
-        rgb, depth = self.renderer.render([A_in_cam])
-        depth = (depth*1000).astype(np.uint16)
-        rgbA,depthA = normalize_scale(rgb, depth, bb, self.image_size)
+      bb = compute_bbox(A_in_cam, self.cam_K, self.object_width, scale=(1000, 1000, 1000))
+      rgb, depth = self.renderer.render([A_in_cam])
+      depth = (depth*1000).astype(np.uint16)
+      rgbA,depthA = crop_bbox(rgb, depth, bb, self.image_size)
       depthA = depthA.astype(np.uint16)
 
       if current_seg is not None:
-        rgbB, depthB, segB = normalize_scale(current_rgb, current_depth, bb, self.image_size, current_seg)
+        rgbB, depthB, segB = crop_bbox(current_rgb, current_depth, bb, self.image_size, current_seg)
       else:
-        rgbB, depthB = normalize_scale(current_rgb, current_depth, bb, self.image_size)
+        rgbB, depthB = crop_bbox(current_rgb, current_depth, bb, self.image_size)
       if np.sum(segB==class_id)<100:
         continue
       depthB = depthB.astype(np.uint16)
@@ -139,7 +166,7 @@ def completeBlenderYcbDR():
   '''Domain Randomization
   '''
   class_id = 13
-  data_folder = '/media/bowen/e25c9489-2f57-42dd-b076-021c59369fec/github/end_to_end_tracking/Experiments/MINE/bowl/'
+  data_folder = '/media/bowen/e25c9489-2f57-42dd-b076-021c59369fec/github/end_to_end_tracking/Experiments/MINE/mustard_bottle/'
 
   dataset_info_dir = data_folder+'dataset_info.yml'
   with open(dataset_info_dir, 'r') as ff:

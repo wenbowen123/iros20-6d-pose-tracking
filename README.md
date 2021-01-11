@@ -11,7 +11,7 @@ This is the official implementation of our paper "se(3)-TrackNet: Data-driven 6D
 
 
 # Bibtex
-```latex
+```bibtex
 @conference {wense3tracknet,
 	title = {se(3)-TrackNet: Data-driven 6D Pose Tracking by Calibrating Image Residuals in Synthetic Domains},
 	booktitle = {IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)},
@@ -75,6 +75,10 @@ Current benchmark:
 
 More details are in the paper and supplementary video.
 
+# Dependency
+Create your anaconda environment by `conda env create -f environment.yml`
+
+Then `source activate bowen`
 
 
 # Data Download
@@ -94,7 +98,7 @@ More details are in the paper and supplementary video.
 
 
 
-# Prediction on YCB and YCBInEOAT
+# Prediction on YCB_Video and YCBInEOAT
 Please refer to `predict.py` and `predict.sh`
 
 # Benchmarking
@@ -105,7 +109,4 @@ Please refer to `eval_ycb.py` and `eval_ycbineoat.py`
 1. Edit the config.yml. Make sure the paths are correct. Other settings need not be changed in most cases.
 1. Then  `python train.py`
 
-
-# To Appear
-- code for synthetic training data generation for your own use case.
 
