@@ -24,6 +24,18 @@ This is the official implementation of our paper "se(3)-TrackNet: Data-driven 6D
 ```
 
 
+# (New) Application to visual feedback control
+
+Some example experiments using se(3)-TrackNet in our recent work "Vision-driven Compliant Manipulation for Reliable, High-Precision Assembly Tasks", RSS 2021.
+
+<img src="./media/ycb_packing.gif" width="600">
+
+<img src="./media/cup_stacking_and_charger.gif" width="600">
+
+<img src="./media/industrial_insertion.gif" width="600">
+
+
+
 # Supplementary Video:
 Click to watch
 
@@ -37,6 +49,7 @@ Click to watch
 <img src="./media/curves.jpg" width="480">
 
 <img src="./media/ycb_results.jpg">
+
 
 
 
