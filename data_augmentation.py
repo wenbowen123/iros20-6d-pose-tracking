@@ -70,6 +70,16 @@ class HSVJitter(object):
 		return rgbA, depthA, rgbB, depthB, maskA, maskB,poseA
 
 
+class ChangeBright:
+	def __init__(self,prob=0.5,mag=[0.5,1.5]):
+		self.mag = mag
+
+	def __call__(self,data):
+		rgbA, depthA, rgbB, depthB, maskA, maskB, poseA = data
+		rgbB = rgbB*random.uniform(self.mag[0],self.mag[1])
+		rgbB = np.clip(rgbB,0,255).astype(np.uint8)
+		return rgbA, depthA, rgbB, depthB, maskA, maskB,poseA
+
 
 
 class GaussianNoise(object):

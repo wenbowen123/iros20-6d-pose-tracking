@@ -1,0 +1,38 @@
+camera:   #Intrinsic params
+  height: 480
+  width: 640
+  focalX: 1.066778000000000020e+03
+  focalY: 1.067487000000000080e+03
+  centerX: 3.129868999999999915e+02
+  centerY: 2.413109000000000037e+02
+
+
+train_samples: 200000               # Number of training samples
+val_samples: 2000                      # Number of validation samples
+max_translation: 0.02                # max possible translation in meter bewteen consecutive images in your video
+max_rotation: 15                      #max possible rotation in degree bewteen consecutive images in your video
+boundingbox: 10                        # Bounding box padding percentage. No need to change
+resolution: 176                          # Resolution of the image
+distribution: gauss              # no need to change this
+renderer: pyrenderer
+
+models:
+  0:   # Index in rendered segmentation image
+    model_path: /home/se3_tracknet/object_models/bunny/1.ply  # Path to your CAD model
+
+blender:
+  range_x: [-0.3,0.3]
+  range_y: [-0.3,0.3]
+  range_z: [0.4,0.9]
+  env_light_range: [0.3,5]
+  env_light_color: [[0,0.05], [0,0.05], [0,0.05]]    #color type float
+  max_lamp_num: 3
+  lamp_brightness: [0.1,1]
+  lamp_colors: [[0.5,1], [0.5,1], [0.5,1]]
+  lamp_pos_range: [[-3,3], [-3,3], [-2,0]]
+
+texture_folders:  # Images to use as background during syn data generation
+  [
+    '/media/bowen/e25c9489-2f57-42dd-b076-021c59369fec/DATASET/dtd/images/**/*.jpg',
+    '/media/bowen/e25c9489-2f57-42dd-b076-021c59369fec/DATASET/ETH_Synthesizability/**/*.jpg',
+  ]

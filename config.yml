@@ -1,5 +1,6 @@
 data_augmentation:
   hsv_noise: [15,15,15]
+  bright_mag: [0.5,1.5]
   gaussian_noise:
     rgb: 2
     depth: 5
@@ -15,7 +16,5 @@ loss_weights:
 
 data_path: /media/bowen/e25c9489-2f57-42dd-b076-021c59369fec/github/end_to_end_tracking/Experiments/master_chef_can/train_data_blender_DR
 validation_path: /media/bowen/e25c9489-2f57-42dd-b076-021c59369fec/github/end_to_end_tracking/Experiments/master_chef_can/validation_data_blender_DR
-output_path: /tmp/train_output
 batch_size: 200
 n_workers: 20
-

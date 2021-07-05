@@ -1,0 +1,14 @@
+{
+  "files.exclude": {
+    "generated_data_pair/": true,
+    "generated_data/": true
+  },
+  "files.watcherExclude": {
+    "generated_data_pair/": true,
+    "generated_data/": true
+  },
+  "search.exclude": {
+    "generated_data_pair/": true,
+    "generated_data/": true
+  }
+}

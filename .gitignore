@@ -1,1 +1,5 @@
 __pycache__/
+*.blend*
+core
+generated_data/
+generated_data_pair/

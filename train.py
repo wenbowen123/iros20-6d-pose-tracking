@@ -35,7 +35,7 @@
 
 
 import open3d as o3d
-import sys
+import sys,shutil
 import os
 dir_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(dir_path)
@@ -66,16 +66,17 @@ torch.backends.cudnn.benchmark = True
 if __name__=="__main__":
 	data_path = config['data_path']
 	validation_path = config['validation_path']
-	output_path = config['output_path']
+	dir_path = os.path.dirname(os.path.realpath(__file__))
+	output_path = f"{dir_path}/train_output/"
 	print('output_path',output_path)
 
 	if not os.path.exists(output_path):
 		os.makedirs(output_path)
 
-	dataset_info = None
 	with open(data_path+'/../dataset_info.yml', 'r') as ff:
 		dataset_info = yaml.safe_load(ff)
 		print('loaded dataset info from:',data_path+'/../dataset_info.yml')
+	shutil.copy(data_path+'/../dataset_info.yml',f'{output_path}/dataset_info.yml')
 
 	hsv_noise = config['data_augmentation']['hsv_noise']
 	batch_size = config['batch_size']
@@ -83,6 +84,7 @@ if __name__=="__main__":
 
 	augmentations = Compose([
 							HSVJitter(hsv_noise[0],hsv_noise[1],hsv_noise[2]),
+							ChangeBright(prob=0.5,mag=[config['data_augmentation']['bright_mag'][0], config['data_augmentation']['bright_mag'][1]]),
 							GaussianNoise(config['data_augmentation']['gaussian_noise']['rgb'], config['data_augmentation']['gaussian_noise']['depth']),
 							GaussianBlur(config['data_augmentation']['gaussian_blur_kernel']),
 							BlackCover(prob=0.2),

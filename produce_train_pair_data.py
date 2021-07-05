@@ -36,7 +36,7 @@
 
 
 import open3d as o3d
-import sys,shutil,pickle
+import sys,shutil,pickle,trimesh
 import os
 from scipy import spatial
 import argparse
@@ -63,10 +63,6 @@ class ProducerPurturb:
     self.check_vis = check_vis
     self.dataset_info = dataset_info
     self.image_size = (self.dataset_info['resolution'],self.dataset_info['resolution'])
-    model_3d_path = self.dataset_info['models'][0]['model_path']
-    if '.ply' not in model_3d_path:
-      model_3d_path = model_3d_path+'/geometry.ply'
-
     self.object_width = dataset_info['object_width']
 
     print('self.object_width=',self.object_width)
@@ -77,7 +73,7 @@ class ProducerPurturb:
     self.cam_K[1,2] = self.dataset_info['camera']['centerY']
     self.cam_K[2,2] = 1
     print('self.cam_K:\n',self.cam_K)
-    obj_path = self.dataset_info['models'][0]['obj_path']
+    obj_path = self.dataset_info['models'][0]['model_path'].replace('.ply','.obj')
     print('obj_path',obj_path)
     self.renderer = Renderer([obj_path],self.cam_K,dataset_info['camera']['height'],dataset_info['camera']['width'])
     self.glcam_in_cvcam = np.array([[1,0,0,0],
@@ -110,8 +106,6 @@ class ProducerPurturb:
     pts = []
     rot_pts = []
     for i in range(num_sample):
-      # if self.count%100==0:
-      #   print('>>>>>>>>>>>>>>>> processing ',self.count)
       B_in_A = random_gaussian_magnitude(max_trans, max_rot)
       A_in_cam = B_in_cam.dot(np.linalg.inv(B_in_A))
 
@@ -146,45 +140,30 @@ class ProducerPurturb:
 
       self.count += 1
 
-      if debug:
-        pts.append(B_in_A[:3,3].reshape(-1))
-        vec = B_in_A[:3,:3].dot(np.array([0,0,1]).reshape(3,1)).reshape(-1)
-        rot_pts.append(vec)
-
-    if debug:
-      from PointCloud import PointCloudClass
-      pts = np.array(pts)
-      rot_pts = np.array(rot_pts)
-      pcd = PointCloudClass(points=pts,colors=np.zeros_like(pts),normals=np.zeros_like(pts))
-      pcd.writePLY('/home/bowen/debug/trans_pts.ply')
-      pcd = PointCloudClass(points=rot_pts,colors=np.zeros_like(pts),normals=np.zeros_like(pts))
-      pcd.writePLY('/home/bowen/debug/rot_pts.ply')
 
 
-
-def completeBlenderYcbDR():
+def completeBlender():
   '''Domain Randomization
   '''
-  class_id = 13
-  data_folder = '/media/bowen/e25c9489-2f57-42dd-b076-021c59369fec/github/end_to_end_tracking/Experiments/MINE/mustard_bottle/'
+  class_id = 0
+  code_dir = os.path.dirname(os.path.realpath(__file__))
+  data_folder = f'{code_dir}/generated_data_pair/'
+  os.system(f'rm -rf {data_folder} && mkdir -p {data_folder}')
 
-  dataset_info_dir = data_folder+'dataset_info.yml'
+  dataset_info_dir = f'{code_dir}/dataset_info.yml'
   with open(dataset_info_dir, 'r') as ff:
     dataset_info = yaml.safe_load(ff)
   if 'object_width' not in dataset_info:
     print('Computing object width')
-    model_3d_path = dataset_info['models'][0]['model_path']
-    if '.ply' not in model_3d_path:
-      model_3d_path = model_3d_path+'/geometry.ply'
-    model_3d = o3d.io.read_point_cloud(model_3d_path)
-    model_3d = np.asarray(model_3d.points).copy()
+    mesh = trimesh.load(dataset_info['models'][0]['model_path'])
+    model_3d = mesh.vertices
     object_max_width = compute_cloud_diameter(model_3d) * 1000
     bounding_box = dataset_info['boundingbox']
     with_add = bounding_box / 100 * object_max_width
     object_width = object_max_width + with_add
     dataset_info['object_width'] = float(object_width)
     print('object_width=',object_width)
-    with open(dataset_info_dir, 'w') as ff:
+    with open(f'{data_folder}/dataset_info.yml', 'w') as ff:
       yaml.dump(dataset_info, ff)
 
   cam_K = np.array([[dataset_info['camera']['focalX'], 0, dataset_info['camera']['centerX']],
@@ -196,16 +175,16 @@ def completeBlenderYcbDR():
                                   [0,0,0,1]])
 
 
-  num_val = 2000
+  num_val = dataset_info['val_samples']
   out_train_path = data_folder+'train_data_blender_DR/'
   out_val_path = data_folder+'validation_data_blender_DR/'
-  _ = input('remove {}\nand\n{}?'.format(out_train_path,out_val_path))
   os.system('rm -rf '+out_train_path+' '+out_val_path)
   os.makedirs(out_train_path)
   os.makedirs(out_val_path)
 
   producer = ProducerPurturb(dataset_info)
-  rgb_files = sorted(glob.glob('/media/bowen/56c8da60-8656-47c3-b940-e928a3d4ec3b/blender_syn_sequence/mydataset_DR/*rgb.png'.format(class_id)))
+  code_dir = os.path.dirname(os.path.realpath(__file__))
+  rgb_files = sorted(glob.glob(f'{code_dir}/generated_data/*rgb.png'))
   assert len(rgb_files)>0
   print('len(rgb_files): ',len(rgb_files))
 
@@ -213,7 +192,6 @@ def completeBlenderYcbDR():
     if i%100==0:
       print('complete pair data class={}:  {}/{}'.format(class_id,i,len(rgb_files)))
     rgb_file = rgb_files[i]
-    # print(rgb_file)
     meta = np.load(rgb_file.replace('rgb.png','poses_in_world.npz'))
     class_ids = meta['class_ids']
     poses_in_world = meta['poses_in_world']
@@ -227,6 +205,7 @@ def completeBlenderYcbDR():
     if len(current_seg.shape)==3:
       current_seg = current_seg[:,:,0]
     if np.sum(current_seg==class_id)<100:
+      print(f"Visible pixels={np.sum(current_seg==class_id)}, skip {rgb_file}")
       continue
 
     current_rgb = np.array(Image.open(rgb_file))[:,:,:3]
@@ -249,7 +228,7 @@ def completeBlenderYcbDR():
 
 
 if __name__ == '__main__':
-  completeBlenderYcbDR()
+  completeBlender()
 
 
 

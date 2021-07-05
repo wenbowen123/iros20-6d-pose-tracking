@@ -9,18 +9,20 @@ This is the official implementation of our paper "se(3)-TrackNet: Data-driven 6D
 **Applications:** model-based RL, manipulation, AR/VR, human-robot-interaction, automatic 6D pose labeling.
 
 
+**This repo can be used when you have the CAD model of the target object. When such model is not available, checkout our another repo [BundleTrack](https://github.com/wenbowen123/BundleTrack), which can be instantly used for 6D pose tracking of novel unknown objects without needing CAD models**
+
 
 # Bibtex
 ```bibtex
-@conference {wense3tracknet,
-	title = {se(3)-TrackNet: Data-driven 6D Pose Tracking by Calibrating Image Residuals in Synthetic Domains},
-	booktitle = {IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)},
-	year = {2020},
-	month = {10/2020},
-	address = {Las Vegas, NV},
-	url = {http://arxiv.org/abs/2007.13866},
-	author = {Wen, B. and Mitash, C. and Ren, B. and Bekris, K. E.}
-}
+@article{wen2020se,
+   title={se(3)-TrackNet: Data-driven 6D Pose Tracking by Calibrating Image Residuals in Synthetic Domains},
+   url={http://dx.doi.org/10.1109/IROS45743.2020.9341314},
+   DOI={10.1109/iros45743.2020.9341314},
+   journal={2020 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)},
+   publisher={IEEE},
+   author={Wen, Bowen and Mitash, Chaitanya and Ren, Baozhang and Bekris, Kostas E.},
+   year={2020},
+   month={Oct} }
 ```
 
 
@@ -88,30 +90,34 @@ Current benchmark:
 
 More details are in the paper and supplementary video.
 
-# Dependency
-Create your anaconda environment by `conda env create -f environment.yml`
+# Quick setup
 
-Then `source activate bowen`
+- Use docker and pull the pre-built image. ([Install docker](https://docs.docker.com/get-docker/) first if you haven't)
+	```
+	docker pull wenbowen123/se3_tracknet:latest
+	```
 
+- Launch docker container as below and now it's ready to run
+   ```
+   cd docker
+   bash run_container.sh
+   ```
 
 # Data Download
-1. [YCB_Video dataset  ](https://rse-lab.cs.washington.edu/projects/posecnn/)
-1. [data_organized](https://archive.cs.rutgers.edu/archive/a/2020/pracsys/Bowen/iros2020/YCB_Video_data_organized/) (15G). It is the reorganized YCB_Video data for convenience. Then extract it under your YCB_Video dataset directory, e.g. YCB_Video_Dataset/data_organized/0048/
-1. [YCBInEOAT dataset](https://archive.cs.rutgers.edu/archive/a/2020/pracsys/Bowen/iros2020/YCBInEOAT/) (22G)
-1. Our [pretrained weights on YCB_Video](https://archive.cs.rutgers.edu/archive/a/2020/pracsys/Bowen/iros2020/YCB_weights.zip) and [pretrained weights on YCBInEOAT](https://archive.cs.rutgers.edu/archive/a/2020/pracsys/Bowen/iros2020/YCBInEOAT_weights.zip)
-1. Our generated [synthetic YCB_Video training data](https://archive.cs.rutgers.edu/archive/a/2020/pracsys/Bowen/iros2020/YCB_traindata/) (~15G for each object) and  [synthetic YCBInEOAT trainnig data](https://archive.cs.rutgers.edu/archive/a/2020/pracsys/Bowen/iros2020/YCBInEOAT_traindata/) (~15G for each object)
+- [YCB_Video object models with ply files](https://archive.cs.rutgers.edu/pracsys/se3_tracknet/YCB_models_with_ply.zip)
+- [data_organized](https://archive.cs.rutgers.edu/archive/a/2020/pracsys/Bowen/iros2020/YCB_Video_data_organized/) (15G). It is the reorganized YCB_Video data for convenience. Then extract it under your YCB_Video dataset directory, e.g. YCB_Video_Dataset/data_organized/0048/
+- [YCBInEOAT dataset](https://archive.cs.rutgers.edu/archive/a/2020/pracsys/Bowen/iros2020/YCBInEOAT/) (22G)
+- Our [pretrained weights on YCB_Video](https://archive.cs.rutgers.edu/archive/a/2020/pracsys/Bowen/iros2020/YCB_weights.zip) and [pretrained weights on YCBInEOAT](https://archive.cs.rutgers.edu/archive/a/2020/pracsys/Bowen/iros2020/YCBInEOAT_weights.zip)
+- Our generated [synthetic YCB_Video training data](https://archive.cs.rutgers.edu/archive/a/2020/pracsys/Bowen/iros2020/YCB_traindata/) (~15G for each object) and  [synthetic YCBInEOAT trainnig data](https://archive.cs.rutgers.edu/archive/a/2020/pracsys/Bowen/iros2020/YCBInEOAT_traindata/) (~15G for each object)
 
 
 <img src="./media/syndata_gen.gif" width="480" style="position:relative;left:5%">
 
-6. [se(3)-TrackNet's output pose estimations of YCB_Video](https://archive.cs.rutgers.edu/archive/a/2020/pracsys/Bowen/iros2020/Ours_YCB_results.tar.gz) and [se(3)-TrackNet's output pose estimations of YCBInEOAT](https://archive.cs.rutgers.edu/archive/a/2020/pracsys/Bowen/iros2020/YCBInEOAT_results/)
+- [se(3)-TrackNet's output pose estimations of YCB_Video](https://archive.cs.rutgers.edu/archive/a/2020/pracsys/Bowen/iros2020/Ours_YCB_results.tar.gz) and [se(3)-TrackNet's output pose estimations of YCBInEOAT](https://archive.cs.rutgers.edu/pracsys/se3_tracknet/YCBInEOAT_results/)
 
 
 
-
-
-
-# Prediction on YCB_Video and YCBInEOAT
+# Test on YCB_Video and YCBInEOAT datasets
 Please refer to `predict.py` and `predict.sh`
 
 # Benchmarking
@@ -123,3 +129,40 @@ Please refer to `eval_ycb.py` and `eval_ycbineoat.py`
 1. Then  `python train.py`
 
 
+# Generate your own data
+Here we take `object_models/bunny` as an exmaple, you need to prepare your own CAD models like it for new objects.
+
+- [Download the blender file](https://archive.cs.rutgers.edu/pracsys/se3_tracknet/1.blend) and put it inside this repository folder
+
+- Edit `dataset_info.yml`. The params are self-explained. In particular, add the object model, e.g. `/home/se3_tracknet/object_models/bunny/1.ply` in our example.
+
+-  Start generation, it should save to `/home/se3_tracknet/generated_data/`
+   ```
+   python blender_main.py
+   ```
+
+- Generate paired data as neighboring images, it should save to `/home/se3_tracknet/generated_data_pair/`
+   ```
+   python produce_train_pair_data.py
+   ```
+
+   Example pair:
+   <p float="left">
+      <img src="./media/0000000rgbA.png" width="200" />
+      <img src="./media/0000000rgbB.png" width="200" />
+   </p>
+
+
+- Now refer to the `Training` section.
+
+
+
+# Test in the wild with ROS
+```
+python predict_ros.py
+```
+
+For more information
+```
+python predict_ros.py --help
+```

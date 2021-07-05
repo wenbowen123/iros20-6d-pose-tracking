@@ -371,7 +371,7 @@ def normalize_rotation_matrix(R):
 def random_gaussian_magnitude(max_T, max_R):
   direction_T = random_direction()
   while 1:
-    magn_T = np.random.normal(0,maxT)
+    magn_T = np.random.normal(0,max_T)
     if abs(magn_T)<=max_T:
       break
   T = direction_T*magn_T
@@ -388,24 +388,6 @@ def random_gaussian_magnitude(max_T, max_R):
   pose[:3,3] = T.copy()
   return pose
 
-
-def random_uniform_magnitude(max_T, max_R):
-  '''
-  @max_R: degree
-  '''
-  direction_T = random_direction()
-  direction_T = direction_T/np.linalg.norm(direction_T)
-  magn_T = np.random.uniform(0,max_T)
-  T = direction_T*magn_T
-  direction_R = random_direction()
-  direction_R = direction_R/np.linalg.norm(direction_R)
-  magn_R = np.random.uniform(0,max_R)
-  rod = direction_R*magn_R/180.0*np.pi
-  R = cv2.Rodrigues(rod)[0].reshape(3,3).copy()
-  pose = np.eye(4)
-  pose[:3,:3] = R
-  pose[:3,3] = T.copy()
-  return pose
 
 
 def random_direction():
@@ -468,6 +450,69 @@ def compute_obj_max_width(model_cloud):
   return compute_cloud_diameter(model_cloud) * 1000
 
 
+
+def fill_depth(depth,max_depth=2.0,extrapolate=False,blur_type='bilateral'):
+  '''
+  @depth: meters
+  '''
+  depth = depth.astype(np.float32)
+  custom_kernel = np.array(
+    [
+        [0, 0, 1, 0, 0],
+        [0, 1, 1, 1, 0],
+        [1, 1, 1, 1, 1],
+        [0, 1, 1, 1, 0],
+        [0, 0, 1, 0, 0],
+    ], dtype=np.uint8)
+  valid_pixels = (depth > 0.1)
+  depth[valid_pixels] = max_depth - depth[valid_pixels]
+  depth = cv2.dilate(depth, custom_kernel)
+
+  # Hole closing
+  FULL_KERNEL_3 = np.ones((3, 3), np.uint8)
+  FULL_KERNEL_5 = np.ones((5, 5), np.uint8)
+  FULL_KERNEL_7 = np.ones((7, 7), np.uint8)
+  FULL_KERNEL_9 = np.ones((9, 9), np.uint8)
+  FULL_KERNEL_31 = np.ones((31, 31), np.uint8)
+  depth = cv2.morphologyEx(depth, cv2.MORPH_CLOSE, FULL_KERNEL_5)
+
+  # Fill empty spaces with dilated values
+  empty_pixels = (depth < 0.1)
+  dilated = cv2.dilate(depth, FULL_KERNEL_7)
+  depth[empty_pixels] = dilated[empty_pixels]
+
+  # Extend highest pixel to top of image
+  if extrapolate:
+    top_row_pixels = np.argmax(depth > 0.1, axis=0)
+    top_pixel_values = depth[top_row_pixels, range(depth.shape[1])]
+
+    for pixel_col_idx in range(depth.shape[1]):
+      depth[0:top_row_pixels[pixel_col_idx], pixel_col_idx] = top_pixel_values[pixel_col_idx]
+
+    # Large Fill
+    empty_pixels = depth < 0.1
+    dilated = cv2.dilate(depth, FULL_KERNEL_31)
+    depth[empty_pixels] = dilated[empty_pixels]
+
+  # Median blur
+  depth = cv2.medianBlur(depth, 5)
+
+  # Bilateral or Gaussian blur
+  if blur_type == 'bilateral':
+    # Bilateral blur
+    depth = cv2.bilateralFilter(depth, 5, 1.5, 2.0)
+  elif blur_type == 'gaussian':
+    # Gaussian blur
+    valid_pixels = (depth > 0.1)
+    blurred = cv2.GaussianBlur(depth, (5, 5), 0)
+    depth[valid_pixels] = blurred[valid_pixels]
+
+  # Invert
+  valid_pixels = (depth > 0.1)
+  depth[valid_pixels] = max_depth - depth[valid_pixels]
+  return depth
+
+
 class Compose(object):
 	def __init__(self, transforms):
 		self.transforms = transforms
@@ -476,3 +521,5 @@ class Compose(object):
 		for t in self.transforms:
 			img = t(img)
 		return img
+
+
