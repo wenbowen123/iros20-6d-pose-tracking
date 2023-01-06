@@ -133,7 +133,7 @@ class Tracker:
 
 		print('self.object_cloud loaded and downsampled')
 		if 'object_width' not in dataset_info:
-			object_max_width = compute_obj_max_width(self.object_cloud)
+			object_max_width = compute_obj_max_width(np.asarray(self.object_cloud.points))
 			bounding_box = dataset_info['boundingbox']
 			with_add = bounding_box / 100 * object_max_width
 			self.object_width = object_max_width + with_add
