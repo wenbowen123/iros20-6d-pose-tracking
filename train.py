@@ -93,7 +93,7 @@ if __name__=="__main__":
 
 	############ Compute mean std
 	posttransforms = Compose([OffsetDepth(),Transpose(),ToTensor()])  #NOTE Transpose() make image CxHxW
-	train_dataset = TrackDataset(data_path,mode='train',images_mean=None,images_std=None,pretransforms=None, augmentations=augmentations, posttransforms=posttransforms, dataset_info=dataset_info)
+	train_dataset = TrackDataset(data_path,mode='train',images_mean=None,images_std=None,pretransforms=None, augmentations=augmentations, posttransforms=posttransforms, dataset_info=dataset_info, trans_normalizer=dataset_info['max_translation'], rot_normalizer=dataset_info['max_rotation']*np.pi/180)
 	print('len(train_dataset)=',len(train_dataset))
 	train_loader = torch.utils.data.DataLoader(train_dataset,
 																batch_size=batch_size,
@@ -128,8 +128,8 @@ if __name__=="__main__":
 
 
 	posttransforms = Compose([OffsetDepth(),NormalizeChannels(images_mean,images_std),ToTensor()])
-	train_dataset = TrackDataset(data_path,'train',images_mean,images_std,None,augmentations,posttransforms,dataset_info=dataset_info)
-	valid_dataset = TrackDataset(validation_path,'val',images_mean,images_std,None,augmentations,posttransforms,dataset_info=dataset_info)
+	train_dataset = TrackDataset(data_path,'train',images_mean,images_std,None,augmentations,posttransforms,dataset_info=dataset_info, trans_normalizer=dataset_info['max_translation'], rot_normalizer=dataset_info['max_rotation']*np.pi/180)
+	valid_dataset = TrackDataset(validation_path,'val',images_mean,images_std,None,augmentations,posttransforms,dataset_info=dataset_info, trans_normalizer=dataset_info['max_translation'], rot_normalizer=dataset_info['max_rotation']*np.pi/180)
 
 	with open(os.path.join(output_path, "config_backup.yml"), 'w') as ff:
 		yaml.dump(config, ff)
