@@ -23,8 +23,8 @@ class TrackerRos:
     self.depth = None
     self.cur_time = None
 
-    self.sub_depth = rospy.Subscriber(args.rgb_topic, Image, self.grab_depth)
-    self.sub_color = rospy.Subscriber(args.depth_topic, Image, self.grab_color)
+    self.sub_depth = rospy.Subscriber(args.depth_topic, Image, self.grab_depth)
+    self.sub_color = rospy.Subscriber(args.rgb_topic, Image, self.grab_color)
     self.listener = tf.listener.TransformListener()
     self.tf_pub = tf.broadcaster.TransformBroadcaster()
     self.A_in_cam = pose_init.copy()
@@ -56,7 +56,7 @@ class TrackerRos:
       print('self.cur_time is None')
       return
 
-    ob_in_cam = self.tracker.on_track(self.A_in_cam,self.color.astype(np.uint8), self.depth, gt_A_in_cam=np.eye(4),gt_B_in_cam=np.eye(4), debug=False, debug_time=False,samples=1)
+    ob_in_cam = self.tracker.on_track(self.A_in_cam,self.color.astype(np.uint8), self.depth, gt_A_in_cam=np.eye(4),gt_B_in_cam=np.eye(4), debug=False,samples=1)
     self.A_in_cam = ob_in_cam.copy()
 
     trans = ob_in_cam[:3,3]
