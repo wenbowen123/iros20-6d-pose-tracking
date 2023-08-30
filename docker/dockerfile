@@ -1,0 +1,44 @@
+FROM nvidia/cudagl:11.3.0-devel-ubuntu16.04
+
+
+RUN apt-get update &&\
+  apt-get install -y software-properties-common &&\
+  add-apt-repository ppa:deadsnakes/ppa &&\
+  add-apt-repository ppa:ubuntu-toolchain-r/test &&\
+  add-apt-repository -y ppa:george-edison55/cmake-3.x &&\
+  add-apt-repository -y ppa:jblgf0/python &&\
+  apt-get update &&\
+  apt-get install -y --no-install-recommends apt-utils git gdb pkg-config libqt4-dev libgtk2.0-dev libusb-1.0-0-dev wget software-properties-common &&\
+  add-apt-repository -y ppa:ubuntu-toolchain-r/test &&\
+  apt-get install -y g++-4.9 gcc-4.9 libstdc++6 &&\
+  apt-get install -y --no-install-recommends build-essential cmake freeglut3-dev git g++ gcc libeigen3-dev libglew-dev libjpeg-dev libsuitesparse-dev libudev-dev libusb-1.0-0-dev unzip zlib1g-dev cython3 libfreetype6-dev python-setuptools python3-yaml curl vim net-tools
+
+RUN apt-get install -y python3.6 python3.6-dev &&\
+  ln -sf /usr/bin/python3.6 /usr/local/bin/python3 &&\
+  ln -sf /usr/bin/python3.6 /usr/bin/python3 &&\
+  cd / && wget https://bootstrap.pypa.io/pip/3.6/get-pip.py &&\
+  python3 get-pip.py
+
+
+RUN  rm -rf /opt/ros/kinetic/lib/python2.7/dist-packages/cv2.so &&\
+  python3 -m pip install --upgrade pip &&\
+  python3 -m pip install trimesh==3.7.12 open3d==0.9.0.0 opencv-python  transformations torchviz torchsummary vispy==0.6.4 PyOpenGL==3.1.0 plyfile pyglet==1.2.4 pyrender==0.1.43 scikit-image==0.16.2 &&\
+  python3 -m pip install Pillow --upgrade
+
+RUN python3 -m pip install torch==1.10.2+cu113 torchvision==0.11.3+cu113 torchaudio==0.10.2+cu113 -f https://download.pytorch.org/whl/cu113/torch_stable.html
+
+
+ENV BLENDER_PATH=/blender-2.79b-linux-glibc219-x86_64/blender
+ENV BPY=/blender-2.79b-linux-glibc219-x86_64/2.79/python/bin/python3.5m
+
+RUN cd / && wget https://download.blender.org/release/Blender2.79/blender-2.79b-linux-glibc219-x86_64.tar.bz2  &&\
+    tar xvf blender-2.79b-linux-glibc219-x86_64.tar.bz2 && rm -rf blender-2.79b-linux-glibc219-x86_64.tar.bz2 &&\
+    ln -s /blender-2.79b-linux-glibc219-x86_64/blender /usr/bin/blender
+
+RUN cd / && rm -rf get-pip.py && wget https://bootstrap.pypa.io/pip/3.5/get-pip.py &&\
+    $BPY get-pip.py &&\
+    rm -rf /blender-2.79b-linux-glibc219-x86_64/2.79/python/lib/python3.5/site-packages/numpy* &&\
+    $BPY -m pip install pillow PyYAML opencv-python==4.1.1.26 numpy future-fstrings &&\
+    cd / && wget https://files.pythonhosted.org/packages/c2/dc/6be133f92213a2e70b9196902c0a1a8a9f960042e2983173ef9b77cdc5c4/transformations-2021.6.6.tar.gz &&\
+    tar xvzf transformations-2021.6.6.tar.gz &&\
+    cp transformations-2021.6.6/transformations/transformations.py /blender-2.79b-linux-glibc219-x86_64/2.79/python/lib/python3.5/site-packages/

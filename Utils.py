@@ -158,11 +158,12 @@ def rgbd2PointCloud(K, depth, rgb=np.array([])):
   return pts, colors, mask
 
 
-def toOpen3dCloud(points,colors):
+def toOpen3dCloud(points,colors=None):
   import open3d as o3d
   cloud = o3d.geometry.PointCloud()
   cloud.points = o3d.utility.Vector3dVector(points.astype(np.float64))
-  cloud.colors = o3d.utility.Vector3dVector(colors.astype(np.float64)/255.0)
+  if colors is not None:
+    cloud.colors = o3d.utility.Vector3dVector(colors.astype(np.float64)/255.0)
   return cloud
 
 

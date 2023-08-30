@@ -92,10 +92,20 @@ More details are in the paper and supplementary video.
 
 # Quick setup
 
-- Use docker and pull the pre-built image. ([Install docker](https://docs.docker.com/get-docker/) first if you haven't)
-	```
-	docker pull wenbowen123/se3_tracknet:latest
-	```
+- First [install docker](https://docs.docker.com/get-docker/) if you haven't.
+
+- Then there are two options to obtain our docker image.
+
+  - Option 1: pull the pre-built image.
+    ```
+    docker pull wenbowen123/se3_tracknet:latest
+    ```
+
+  - Option 2: build from source
+    ```
+    cd docker
+    docker build -t se3_tracknet .
+    ```
 
 - Launch docker container as below and now it's ready to run
    ```
@@ -116,11 +126,20 @@ More details are in the paper and supplementary video.
 - [se(3)-TrackNet's output pose estimations of YCB_Video](https://archive.cs.rutgers.edu/archive/a/2020/pracsys/Bowen/iros2020/Ours_YCB_results.tar.gz) and [se(3)-TrackNet's output pose estimations of YCBInEOAT](https://archive.cs.rutgers.edu/pracsys/se3_tracknet/YCBInEOAT_results/)
 
 
+# Test on YCB-Video data
+The following example runs on the sequence of object `bleach_cleanser`, where `class_id` is the bleach cleanser's ID (counting from 1) given by the YCB-Video dataset. You have to modify the paths for your own.
+```
+python3 predict.py --mode ycbv --ycb_dir /home/bowen/debug/ --seq_id 51 --train_data_path /home/bowen/debug/YCBV_data/bleach_cleanser/train_data_blender_DR --ckpt_dir /home/bowen/debug/YCBV_weights/bleach_cleanser/model_best_val.pth.tar --mean_std_path /home/bowen/debug/YCBV_weights/bleach_cleanser --class_id 12 --model_path /home/bowen/debug/YCB_models_with_ply/CADmodels/021_bleach_cleanser/textured.ply --outdir /tmp/se3_tracknet_output
+```
 
-# Test on YCB_Video and YCBInEOAT datasets
-Please refer to `predict.py` and `predict.sh`
 
-# Benchmarking
+# Test on YCBInEOAT data
+The following example runs on the sequence of object `bleach_cleanser`, where `class_id` is the bleach cleanser's ID (counting from 1) given by the YCB-Video dataset. You have to modify the paths for your own. Note that the model_path is different from what's used for YCB-Video data (different training weights and synthetic training data for generalizing beyond tabletop).
+```
+python3 predict.py --mode ycbineoat --YCBInEOAT_dir /mnt/9a72c439-d0a7-45e8-8d20-d7a235d02763/DATASET/YCBInEOAT/bleach0 --train_data_path /home/bowen/debug/YCBInEOAT_data/bleach_cleanser/train_data_blender_DR --ckpt_dir /home/bowen/debug/YCBInEOAT_weights/bleach_cleanser/model_best_val.pth.tar --mean_std_path /home/bowen/debug/YCBInEOAT_weights/bleach_cleanser --class_id 12 --model_path /mnt/9a72c439-d0a7-45e8-8d20-d7a235d02763/DATASET/YCB_Video/models/021_bleach_cleanser/textured_simple.obj --outdir /tmp/se3_tracknet_output
+```
+
+# Benchmarking stats
 Please refer to `eval_ycb.py` and `eval_ycbineoat.py`
 
 

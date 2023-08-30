@@ -35,7 +35,7 @@
 
 import open3d as o3d
 import sys,math,random
-import os,subprocess
+import os,subprocess,pdb
 import re
 import scipy.io
 dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -125,10 +125,11 @@ def use_posecnn_res(class_id,seq_frame_str):
 
 
 class Tracker:
-  def __init__(self, dataset_info, images_mean, images_std, ckpt_dir, trans_normalizer=0.03, rot_normalizer=5*np.pi/180):
+  def __init__(self, dataset_info, images_mean, images_std, ckpt_dir, model_path=None, trans_normalizer=0.03, rot_normalizer=5*np.pi/180):
     self.dataset_info = dataset_info
     self.image_size = (dataset_info['resolution'], dataset_info['resolution'])
-    self.object_cloud = o3d.io.read_point_cloud(dataset_info['models'][0]['model_path'])
+    mesh = trimesh.load(model_path)
+    self.object_cloud = toOpen3dCloud(mesh.vertices)
     self.object_cloud = self.object_cloud.voxel_down_sample(voxel_size=0.005)
 
     print('self.object_cloud loaded and downsampled')
@@ -155,13 +156,30 @@ class Tracker:
     self.model.load_state_dict(checkpoint['state_dict'])
     self.model = self.model.cuda()
     self.model.eval()
+    print("net init done")
 
     if 'renderer' in dataset_info and dataset_info['renderer']=='pyrenderer':
       print('Using pyrenderer')
-      self.renderer = Renderer([dataset_info['models'][0]['obj_path']],self.K,cam_cfg['height'],cam_cfg['width'])
+      assert '.obj' in model_path
+      self.renderer = Renderer([model_path],self.K,cam_cfg['height'],cam_cfg['width'])
     else:
       print('Using vispy renderer')
-      self.renderer = VispyRenderer(dataset_info['models'][0]['model_path'], self.K, H=dataset_info['resolution'], W=dataset_info['resolution'])
+      # if '.obj' in model_path:
+      #   mesh = trimesh.load(model_path)
+      #   img = np.asarray(mesh.visual.material.image)[...,:3]
+      #   H,W = img.shape[:2]
+      #   uv = mesh.visual.uv * np.array([W-1, H-1]).reshape(1,2)
+      #   uv = uv.round().astype(int)
+      #   vc = img[::-1][uv[:,1], uv[:,0]]
+      #   visual_new = trimesh.visual.ColorVisuals(mesh=mesh, vertex_colors=vc)
+      #   mesh.visual = visual_new
+      #   new_model_path = model_path.replace('.obj','.ply')
+      #   mesh.export(new_model_path)
+      #   # pdb.set_trace()
+      #   model_path = new_model_path
+      # pdb.set_trace()
+      assert '.ply' in model_path
+      self.renderer = VispyRenderer(model_path, self.K, H=dataset_info['resolution'], W=dataset_info['resolution'])
 
     self.prev_rgb = None
     self.prev_depth = None
@@ -297,7 +315,7 @@ def getResultsYcb():
   test_data_dir = '{}/data_organized/'.format(args.ycb_dir)
   gt_dirs = glob.glob(test_data_dir+'**/pose_gt')
   gt_dirs.sort()
-  tracker = Tracker(dataset_info, images_mean, images_std,ckpt_dir)
+  tracker = Tracker(dataset_info, images_mean, images_std,ckpt_dir, model_path=model_path)
   keyframe_begin_id_map = {}
   with open('{}/image_sets/keyframe.txt'.format(args.ycb_dir),'r') as ff:
     lines = ff.readlines()
@@ -427,8 +445,9 @@ def getResultsYcb():
 
 def predictSequenceYcb():
   init = 'gt'
-  seq_id = 50
-  test_data_path = '{}/data_organized/%04d'.format(args.ycb_dir)%(seq_id)
+  seq_id = args.seq_id
+  debug = False
+  test_data_path = '{}/%04d'.format(args.ycb_dir)%(seq_id)
   class_id = 4
   if args.class_id is not None:
     class_id = args.class_id
@@ -452,7 +471,7 @@ def predictSequenceYcb():
     gt_poses.append(gt)
     # break
 
-  tracker = Tracker(dataset_info, images_mean, images_std,ckpt_dir)
+  tracker = Tracker(dataset_info, images_mean, images_std,ckpt_dir, model_path=model_path)
   print('gt_poses[0]=\n',gt_poses[start_frame])
 
   if init=='gt':
@@ -521,7 +540,7 @@ def predictSequenceYcb():
       A_in_cam = use_posecnn_res(class_id,'%04d/%06d'%(seq_id,i-1))
       print('Reinitialized at ',i)
 
-    cur_pose = tracker.on_track(A_in_cam, rgb, depth, gt_A_in_cam=gt_poses[i-1],gt_B_in_cam=gt_poses[i], debug=False,samples=samples)
+    cur_pose = tracker.on_track(A_in_cam, rgb, depth, gt_A_in_cam=gt_poses[i-1],gt_B_in_cam=gt_poses[i], debug=debug,samples=samples)
     A_in_cam = cur_pose.copy()
 
     prev_pose = cur_pose.copy()
@@ -556,7 +575,7 @@ def predictSequenceYcb():
   print('reinit_frames {}, adi_auc {}'.format(reinit_frames,adi_auc))
 
 
-def predictSequenceMyData():
+def predictSequenceYcbInEOAT():
   samples = 1
   debug = False
   test_data_path = args.YCBInEOAT_dir
@@ -564,15 +583,13 @@ def predictSequenceMyData():
   rgb_files = sorted(glob.glob('{}/rgb/*.png'.format(test_data_path)))
   depth_files = sorted(glob.glob('{}/depth_filled/*.png'.format(test_data_path)))
 
-  tracker = Tracker(dataset_info, images_mean, images_std,ckpt_dir, trans_normalizer=0.03, rot_normalizer=30*np.pi/180)
+  tracker = Tracker(dataset_info, images_mean, images_std,ckpt_dir, model_path=model_path, trans_normalizer=0.03, rot_normalizer=30*np.pi/180)
 
   gt_files = sorted(glob.glob('{}/annotated_poses/*.txt'.format(test_data_path)))
   gt_poses = []
   for i in range(len(gt_files)):
     gt_pose = np.loadtxt(gt_files[i])
     gt_poses.append(gt_pose)
-  pred_poses = [gt_poses[0]]
-  prev_second_pose = None
   prev_pose = gt_poses[0].copy()
   print('init pose\n',prev_pose)
   K = tracker.K.copy()
@@ -609,10 +626,13 @@ def predictSequenceMyData():
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
+  parser.add_argument('--mode', default='ycbv', help='ycbv / ycbineoat ')
+  parser.add_argument('--seq_id', default=None, type=int)
   parser.add_argument('--ycb_dir', default='/media/bowen/e25c9489-2f57-42dd-b076-021c59369fec/DATASET/Tracking/YCB_Video_Dataset')
   parser.add_argument('--YCBInEOAT_dir', default='/media/bowen/e25c9489-2f57-42dd-b076-021c59369fec/catkin_ws/src/iros20_dataset/video_rosbag/IROS_SELECTED/FINISHED_LABEL.iros_submission_version/bleach0')
   parser.add_argument('--train_data_path', help="train_data_path path", default="None", type=str)
   parser.add_argument('--class_id', default=-1, type=int, help='class id in YCB Video')
+  parser.add_argument('--model_path', type=str, help='path to mesh')
   parser.add_argument('--ckpt_dir', type=str)
   parser.add_argument('--mean_std_path', type=str)
   parser.add_argument('--outdir', help="save res dir", type=str, default='/home/bowen/debug/')
@@ -622,6 +642,7 @@ if __name__ == '__main__':
 
   ckpt_dir = args.ckpt_dir
   mean_std_path = args.mean_std_path
+  model_path = args.model_path
 
   print('ckpt_dir:',ckpt_dir)
 
@@ -636,8 +657,11 @@ if __name__ == '__main__':
   images_mean = np.load(os.path.join(mean_std_path, "mean.npy"))
   images_std = np.load(os.path.join(mean_std_path, "std.npy"))
 
-  # predictSequenceYcb()
-  # getResultsYcb()
-  predictSequenceMyData()
+  if args.mode=='ycbv':
+    predictSequenceYcb()
+  elif args.mode=='ycbineoat':
+    predictSequenceYcbInEOAT()
+  else:
+    getResultsYcb()
 
 
